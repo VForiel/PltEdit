@@ -8,7 +8,7 @@ version = "0.1.0"
 description = "Save and reload editable matplotlib figures as .plt files"
 readme = "README.md"
 license = { text = "MIT" }
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 keywords = ["matplotlib", "figure", "save", "load", "plot", "edit"]
 classifiers = [
     "Development Status :: 3 - Alpha",
@@ -20,6 +20,8 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Topic :: Scientific/Engineering :: Visualization",
 ]
 dependencies = [
