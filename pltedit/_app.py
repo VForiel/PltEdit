@@ -64,9 +64,9 @@ def _editing_controls(fig: plt.Figure) -> plt.Figure:
     # -- Figure title -------------------------------------------------------
     c_t1, c_t2 = st.sidebar.columns([3, 1])
     current_suptitle = fig._suptitle.get_text() if fig._suptitle else ""
-    current_suptitle_size = fig._suptitle.get_fontsize() if fig._suptitle else 14.0
+    current_suptitle_size = int(fig._suptitle.get_fontsize()) if fig._suptitle else 14
     new_suptitle = c_t1.text_input("Figure title", value=current_suptitle)
-    new_suptitle_size = c_t2.number_input("Size", value=float(current_suptitle_size), key="fig_title_size")
+    new_suptitle_size = c_t2.number_input("Size", value=current_suptitle_size, key="fig_title_size", step=1)
     if new_suptitle != current_suptitle or new_suptitle_size != current_suptitle_size:
         fig.suptitle(new_suptitle, size=new_suptitle_size)
 
@@ -77,19 +77,19 @@ def _editing_controls(fig: plt.Figure) -> plt.Figure:
             # Title
             c_t1, c_t2 = st.columns([3, 1])
             title = c_t1.text_input("Title", value=ax.get_title(), key=f"ax{i}_title")
-            tsize = c_t2.number_input("Size", value=float(ax.title.get_fontsize()), key=f"ax{i}_tsize")
+            tsize = c_t2.number_input("Size", value=int(ax.title.get_fontsize()), key=f"ax{i}_tsize", step=1)
             ax.set_title(title, fontsize=tsize)
 
             # X label
             c_xl1, c_xl2 = st.columns([3, 1])
             xlabel = c_xl1.text_input("X label", value=ax.get_xlabel(), key=f"ax{i}_xlabel")
-            xlsize = c_xl2.number_input("Size", value=float(ax.xaxis.label.get_fontsize()), key=f"ax{i}_xlsize")
+            xlsize = c_xl2.number_input("Size", value=int(ax.xaxis.label.get_fontsize()), key=f"ax{i}_xlsize", step=1)
             ax.set_xlabel(xlabel, fontsize=xlsize)
 
             # Y label
             c_yl1, c_yl2 = st.columns([3, 1])
             ylabel = c_yl1.text_input("Y label", value=ax.get_ylabel(), key=f"ax{i}_ylabel")
-            ylsize = c_yl2.number_input("Size", value=float(ax.yaxis.label.get_fontsize()), key=f"ax{i}_ylsize")
+            ylsize = c_yl2.number_input("Size", value=int(ax.yaxis.label.get_fontsize()), key=f"ax{i}_ylsize", step=1)
             ax.set_ylabel(ylabel, fontsize=ylsize)
 
             st.divider()
@@ -160,10 +160,10 @@ def _editing_controls(fig: plt.Figure) -> plt.Figure:
                 xt_input = c_tkx.text_input("X Ticks (csv)", value=xt_str, key=f"ax{i}_xt")
                 xtl_input = c_tkx.text_input("X Labels (csv)", value=xtl_str, key=f"ax{i}_xtl")
                 
-                t_fs_x = 10.0
-                if ax.get_xticklabels():
-                    t_fs_x = float(ax.get_xticklabels()[0].get_fontsize())
-                xt_size = c_tkx.number_input("X Tick Size", value=t_fs_x, key=f"ax{i}_xts")
+                t_fs_x = 10
+                if ax.get_xticklabels() and len(ax.get_xticklabels()) > 0:
+                    t_fs_x = int(ax.get_xticklabels()[0].get_fontsize())
+                xt_size = c_tkx.number_input("X Tick Size", value=t_fs_x, key=f"ax{i}_xts", step=1)
                 
                 try:
                     if xt_input and xt_input != xt_str:
@@ -187,10 +187,10 @@ def _editing_controls(fig: plt.Figure) -> plt.Figure:
                 yt_input = c_tky.text_input("Y Ticks (csv)", value=yt_str, key=f"ax{i}_yt")
                 ytl_input = c_tky.text_input("Y Labels (csv)", value=ytl_str, key=f"ax{i}_ytl")
                 
-                t_fs_y = 10.0
-                if ax.get_yticklabels():
-                    t_fs_y = float(ax.get_yticklabels()[0].get_fontsize())
-                yt_size = c_tky.number_input("Y Tick Size", value=t_fs_y, key=f"ax{i}_yts")
+                t_fs_y = 10
+                if ax.get_yticklabels() and len(ax.get_yticklabels()) > 0:
+                    t_fs_y = int(ax.get_yticklabels()[0].get_fontsize())
+                yt_size = c_tky.number_input("Y Tick Size", value=t_fs_y, key=f"ax{i}_yts", step=1)
                 
                 try:
                     if yt_input and yt_input != yt_str:
