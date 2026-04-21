@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pltedit"
-version = "0.1.0"
+version = "0.1.1"
 description = "Save and reload editable matplotlib figures as .plt files"
 readme = "README.md"
 license = { text = "MIT" }
