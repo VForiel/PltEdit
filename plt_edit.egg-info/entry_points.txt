@@ -1,2 +1,0 @@
-[console_scripts]
-plt-edit = plt_edit._cli:main
