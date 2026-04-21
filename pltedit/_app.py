@@ -152,9 +152,17 @@ def _editing_controls(fig: plt.Figure) -> plt.Figure:
                 c_tkx, c_tky = st.columns(2)
                 
                 # X Ticks
-                x_ticks = ax.get_xticks()
-                x_ticklabels = [t.get_text() for t in ax.get_xticklabels()]
-                xt_str = ", ".join([str(v) for v in x_ticks])
+                xlim = ax.get_xlim()
+                raw_x_ticks = ax.get_xticks()
+                raw_x_ticklabels = [t.get_text() for t in ax.get_xticklabels()]
+                
+                # Filter ticks within the view limits
+                x_valid_idx = [j for j, val in enumerate(raw_x_ticks) if min(xlim) <= val <= max(xlim)]
+                x_ticks = [raw_x_ticks[j] for j in x_valid_idx]
+                x_ticklabels = [raw_x_ticklabels[j] for j in x_valid_idx if j < len(raw_x_ticklabels)]
+                
+                # Format to string without scientific float weirdness where possible
+                xt_str = ", ".join([f"{v:g}" for v in x_ticks])
                 xtl_str = ", ".join(x_ticklabels) if x_ticklabels and any(x_ticklabels) else ""
                 
                 xt_input = c_tkx.text_input("X Ticks (csv)", value=xt_str, key=f"ax{i}_xt")
@@ -166,22 +174,42 @@ def _editing_controls(fig: plt.Figure) -> plt.Figure:
                 xt_size = c_tkx.number_input("X Tick Size", value=t_fs_x, key=f"ax{i}_xts", step=1)
                 
                 try:
+                    xlabels_updated = False
                     if xt_input and xt_input != xt_str:
-                        new_xticks = [float(x.strip()) for x in xt_input.split(",") if x.strip()]
+                        new_xticks_raw = [float(x.strip()) for x in xt_input.split(",") if x.strip()]
+                        
+                        # filter user provided ticks
+                        n_valid = [j for j, val in enumerate(new_xticks_raw) if min(xlim) <= val <= max(xlim)]
+                        new_xticks = [new_xticks_raw[j] for j in n_valid]
                         ax.set_xticks(new_xticks)
+                        
+                        # If user also provided matching labels, apply them aligned with filtered ticks
+                        if xtl_input:
+                            new_xtl_raw = [x.strip() for x in xtl_input.split(",")]
+                            if len(new_xtl_raw) == len(new_xticks_raw):
+                                new_xlabels = [new_xtl_raw[j] for j in n_valid]
+                                ax.set_xticklabels(new_xlabels)
+                                xlabels_updated = True
+                                
+                    if xtl_input and xtl_input != xtl_str and not xlabels_updated:
+                        new_xlabels = [x.strip() for x in xtl_input.split(",")]
+                        if len(new_xlabels) == len(ax.get_xticks()):
+                            ax.set_xticklabels(new_xlabels)
                 except ValueError: pass
                 
-                if xtl_input and xtl_input != xtl_str:
-                    new_xlabels = [x.strip() for x in xtl_input.split(",")]
-                    if len(new_xlabels) == len(ax.get_xticks()):
-                        ax.set_xticklabels(new_xlabels)
-                        
                 ax.tick_params(axis='x', labelsize=xt_size)
                 
                 # Y Ticks
-                y_ticks = ax.get_yticks()
-                y_ticklabels = [t.get_text() for t in ax.get_yticklabels()]
-                yt_str = ", ".join([str(v) for v in y_ticks])
+                ylim = ax.get_ylim()
+                raw_y_ticks = ax.get_yticks()
+                raw_y_ticklabels = [t.get_text() for t in ax.get_yticklabels()]
+                
+                # Filter ticks within the view limits
+                y_valid_idx = [j for j, val in enumerate(raw_y_ticks) if min(ylim) <= val <= max(ylim)]
+                y_ticks = [raw_y_ticks[j] for j in y_valid_idx]
+                y_ticklabels = [raw_y_ticklabels[j] for j in y_valid_idx if j < len(raw_y_ticklabels)]
+                
+                yt_str = ", ".join([f"{v:g}" for v in y_ticks])
                 ytl_str = ", ".join(y_ticklabels) if y_ticklabels and any(y_ticklabels) else ""
                 
                 yt_input = c_tky.text_input("Y Ticks (csv)", value=yt_str, key=f"ax{i}_yt")
@@ -193,15 +221,27 @@ def _editing_controls(fig: plt.Figure) -> plt.Figure:
                 yt_size = c_tky.number_input("Y Tick Size", value=t_fs_y, key=f"ax{i}_yts", step=1)
                 
                 try:
+                    ylabels_updated = False
                     if yt_input and yt_input != yt_str:
-                        new_yticks = [float(y.strip()) for y in yt_input.split(",") if y.strip()]
+                        new_yticks_raw = [float(y.strip()) for y in yt_input.split(",") if y.strip()]
+                        
+                        # filter user provided ticks
+                        n_valid_y = [j for j, val in enumerate(new_yticks_raw) if min(ylim) <= val <= max(ylim)]
+                        new_yticks = [new_yticks_raw[j] for j in n_valid_y]
                         ax.set_yticks(new_yticks)
+                        
+                        if ytl_input:
+                            new_ytl_raw = [y.strip() for y in ytl_input.split(",")]
+                            if len(new_ytl_raw) == len(new_yticks_raw):
+                                new_ylabels = [new_ytl_raw[j] for j in n_valid_y]
+                                ax.set_yticklabels(new_ylabels)
+                                ylabels_updated = True
+                                
+                    if ytl_input and ytl_input != ytl_str and not ylabels_updated:
+                        new_ylabels = [y.strip() for y in ytl_input.split(",")]
+                        if len(new_ylabels) == len(ax.get_yticks()):
+                            ax.set_yticklabels(new_ylabels)
                 except ValueError: pass
-                
-                if ytl_input and ytl_input != ytl_str:
-                    new_ylabels = [y.strip() for y in ytl_input.split(",")]
-                    if len(new_ylabels) == len(ax.get_yticks()):
-                        ax.set_yticklabels(new_ylabels)
                         
                 ax.tick_params(axis='y', labelsize=yt_size)
 
