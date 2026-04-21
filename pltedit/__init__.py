@@ -21,7 +21,7 @@ Basic usage::
     plt.show()
 """
 
-from plt_edit._io import save, load
-from plt_edit._version import __version__
+from pltedit._io import save, load
+from pltedit._version import __version__
 
 __all__ = ["save", "load", "__version__"]

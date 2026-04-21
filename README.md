@@ -23,7 +23,7 @@ The metadata JSON includes:
   "created_at": "2024-01-15T12:00:00+00:00",
   "python_version": "3.12.3 (main, ...)",
   "matplotlib_version": "3.10.1",
-  "plt_edit_version": "0.1.0"
+  "pltedit_version": "0.1.0"
 }
 ```
 
@@ -43,7 +43,7 @@ pip install plt-edit[app]
 
 ```python
 import matplotlib.pyplot as plt
-import plt_edit
+import pltedit as plte
 
 # Create a figure
 fig, ax = plt.subplots()
@@ -51,14 +51,14 @@ ax.plot([1, 2, 3], [4, 5, 6], label="my data")
 ax.set_title("My plot")
 
 # Save to .plt
-plt_edit.save(fig, "my_figure.plt")
+plte.save(fig, "my_figure.plt")
 
 # Load in another session
-fig2 = plt_edit.load("my_figure.plt")
+fig2 = plte.load("my_figure.plt")
 plt.show()
 
 # Inspect metadata
-from plt_edit._io import get_metadata
+from pltedit._io import get_metadata
 meta = get_metadata("my_figure.plt")
 print(meta["created_at"])
 ```
@@ -66,14 +66,14 @@ print(meta["created_at"])
 You can also pass an `Axes` object directly to `save()`:
 
 ```python
-plt_edit.save(ax, "from_axes.plt")
+plte.save(ax, "from_axes.plt")
 ```
 
 ### Streamlit GUI
 
 ```bash
-plt-edit                        # open the GUI (file upload)
-plt-edit path/to/figure.plt     # open the GUI with a pre-loaded file
+pltedit                        # open the GUI (file upload)
+pltedit path/to/figure.plt     # open the GUI with a pre-loaded file
 ```
 
 The GUI lets you:

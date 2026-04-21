@@ -14,7 +14,7 @@ A .plt file is a NumPy archive (.npz) renamed to .plt.  It contains:
       Full Python version string (e.g. ``"3.12.3"``).
   ``matplotlib_version``
       Matplotlib version string (e.g. ``"3.10.1"``).
-  ``plt_edit_version``
+  ``pltedit_version``
       Plt-Edit version string (e.g. ``"0.1.0"``).
 """
 
@@ -24,6 +24,7 @@ import io
 import json
 import os
 import pickle
+import shutil
 import sys
 import tempfile
 from datetime import datetime, timezone
@@ -35,7 +36,7 @@ import numpy as np
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 
-from plt_edit._version import __version__
+from pltedit._version import __version__
 
 
 # ---------------------------------------------------------------------------
@@ -82,7 +83,7 @@ def save(fig: Union[Figure, Axes], path: Union[str, os.PathLike]) -> None:
         "created_at": datetime.now(tz=timezone.utc).isoformat(),
         "python_version": sys.version,
         "matplotlib_version": matplotlib.__version__,
-        "plt_edit_version": __version__,
+        "pltedit_version": __version__,
     }
     metadata_array = np.array(json.dumps(metadata_dict))
 
@@ -93,7 +94,7 @@ def save(fig: Union[Figure, Axes], path: Union[str, os.PathLike]) -> None:
 
     try:
         np.savez(tmp_path, figure=figure_bytes, metadata=metadata_array)
-        os.replace(tmp_path, path)
+        shutil.move(tmp_path, path)
     except Exception:
         # Clean up temp file on failure
         if os.path.exists(tmp_path):
@@ -149,6 +150,12 @@ def load(path: Union[str, os.PathLike]) -> Figure:
             "The deserialized object is not a matplotlib Figure."
         )
 
+    import matplotlib.pyplot as plt
+    dummy = plt.figure()
+    new_manager = dummy.canvas.manager
+    new_manager.canvas.figure = fig
+    fig.set_canvas(new_manager.canvas)
+
     return fig
 
 
@@ -164,7 +171,7 @@ def get_metadata(path: Union[str, os.PathLike]) -> dict:
     -------
     dict
         Dictionary with keys ``created_at``, ``python_version``,
-        ``matplotlib_version``, and ``plt_edit_version``.
+        ``matplotlib_version``, and ``pltedit_version``.
 
     Raises
     ------

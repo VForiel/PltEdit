@@ -3,7 +3,7 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "plt-edit"
+name = "pltedit"
 version = "0.1.0"
 description = "Save and reload editable matplotlib figures as .plt files"
 readme = "README.md"
@@ -37,7 +37,7 @@ dev = [
 ]
 
 [project.scripts]
-plt-edit = "plt_edit._cli:main"
+pltedit = "pltedit._cli:main"
 
 [project.urls]
 Homepage = "https://github.com/VForiel/Plt-Edit"
@@ -45,7 +45,7 @@ Repository = "https://github.com/VForiel/Plt-Edit"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["plt_edit*"]
+include = ["pltedit*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

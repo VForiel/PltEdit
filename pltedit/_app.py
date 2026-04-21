@@ -18,7 +18,7 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import streamlit as st
 
-from plt_edit._io import load, get_metadata
+from pltedit._io import load, get_metadata
 
 
 def _sidebar_metadata(meta: dict) -> None:

@@ -1,4 +1,4 @@
-"""Tests for plt_edit save/load functionality."""
+"""Tests for pltedit save/load functionality."""
 
 from __future__ import annotations
 
@@ -11,8 +11,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pytest
 
-import plt_edit
-from plt_edit._io import save, load, get_metadata
+import pltedit
+from pltedit._io import save, load, get_metadata
 
 
 # ---------------------------------------------------------------------------
@@ -128,7 +128,7 @@ class TestGetMetadata:
 
     def test_required_keys(self, plt_file):
         meta = get_metadata(plt_file)
-        for key in ("created_at", "python_version", "matplotlib_version", "plt_edit_version"):
+        for key in ("created_at", "python_version", "matplotlib_version", "pltedit_version"):
             assert key in meta, f"Missing key: {key}"
 
     def test_python_version(self, plt_file):
@@ -139,9 +139,9 @@ class TestGetMetadata:
         meta = get_metadata(plt_file)
         assert meta["matplotlib_version"] == matplotlib.__version__
 
-    def test_plt_edit_version(self, plt_file):
+    def test_pltedit_version(self, plt_file):
         meta = get_metadata(plt_file)
-        assert meta["plt_edit_version"] == plt_edit.__version__
+        assert meta["pltedit_version"] == pltedit.__version__
 
     def test_file_not_found(self, tmp_path):
         with pytest.raises(FileNotFoundError):
