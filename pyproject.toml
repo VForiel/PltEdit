@@ -1,0 +1,51 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pltedit"
+version = "0.1.0"
+description = "Save and reload editable matplotlib figures as .plt files"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.9"
+keywords = ["matplotlib", "figure", "save", "load", "plot", "edit"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Visualization",
+]
+dependencies = [
+    "matplotlib>=3.5",
+    "numpy>=1.22",
+]
+
+[project.optional-dependencies]
+app = ["streamlit>=1.20"]
+dev = [
+    "pytest>=7",
+    "matplotlib>=3.5",
+    "numpy>=1.22",
+    "streamlit>=1.20",
+]
+
+[project.scripts]
+pltedit = "pltedit._cli:main"
+
+[project.urls]
+Homepage = "https://github.com/VForiel/Plt-Edit"
+Repository = "https://github.com/VForiel/Plt-Edit"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["pltedit*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
