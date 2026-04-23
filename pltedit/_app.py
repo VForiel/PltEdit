@@ -28,6 +28,15 @@ import streamlit as st
 
 from pltedit._io import load, get_metadata, save
 from pltedit._style import set_style
+from matplotlib.colors import to_hex
+
+def _color_to_hex(c):
+    try:
+        if str(c).lower() == 'none' or c is None:
+            return "#ffffff"
+        return to_hex(c, keep_alpha=False)
+    except Exception:
+        return "#000000"
 
 
 def _display_metadata(meta: dict) -> None:
@@ -249,6 +258,120 @@ def _editing_controls(fig: plt.Figure) -> plt.Figure:
                 except ValueError: pass
                         
                 ax.tick_params(axis='y', labelsize=yt_size)
+
+            with st.expander("🎨 Artists Settings"):
+                data_artists = []
+                for idx, a in enumerate(ax.lines): data_artists.append(("Line", idx, a))
+                for idx, a in enumerate(ax.collections): data_artists.append(("Collection", idx, a))
+                for idx, a in enumerate(ax.patches): data_artists.append(("Patch", idx, a))
+                for idx, a in enumerate(ax.texts): data_artists.append(("Text", idx, a))
+                
+                if data_artists:
+                    def get_name(item):
+                        kind, idx, a = item
+                        lbl = a.get_label()
+                        if not lbl or lbl.startswith('_'): lbl = f"{kind} {idx+1}"
+                        else: lbl = f"{kind}: {lbl}"
+                        return lbl
+                    
+                    artist_names = [get_name(item) for item in data_artists]
+                    sel_artist_idx = st.selectbox("Select Artist", range(len(data_artists)), format_func=lambda j: artist_names[j], key=f"ax{i}_sel_artist")
+                    kind, idx, artist = data_artists[sel_artist_idx]
+                    
+                    if kind == "Line":
+                        st.markdown("**Line Settings**")
+                        c_l, c_w = st.columns(2)
+                        
+                        curr_c = _color_to_hex(artist.get_color())
+                        new_c = c_l.color_picker("Color", value=curr_c, key=f"ax{i}_l{idx}_c")
+                        
+                        curr_lw = float(artist.get_linewidth())
+                        new_lw = c_w.number_input("Linewidth", value=curr_lw, min_value=0.0, step=0.5, key=f"ax{i}_l{idx}_lw")
+                        
+                        c_ls, c_m = st.columns(2)
+                        ls_opts = ["-", "--", "-.", ":", "None"]
+                        curr_ls = artist.get_linestyle()
+                        if curr_ls not in ls_opts: ls_opts = [curr_ls] + [x for x in ls_opts if x != curr_ls]
+                        new_ls = c_ls.selectbox("Linestyle", ls_opts, index=0 if curr_ls not in ls_opts else ls_opts.index(curr_ls), key=f"ax{i}_l{idx}_ls")
+                        
+                        m_opts = ["None", ".", ",", "o", "v", "^", "<", ">", "1", "2", "3", "4", "s", "p", "*", "h", "H", "+", "x", "D", "d", "|", "_"]
+                        curr_m = artist.get_marker()
+                        try:
+                            curr_m_str = str(curr_m)
+                            if curr_m_str not in m_opts: m_opts = [curr_m_str] + [x for x in m_opts if x != curr_m_str]
+                        except Exception:
+                            curr_m_str = "None"
+                        new_m = c_m.selectbox("Marker", m_opts, index=0 if curr_m_str not in m_opts else m_opts.index(curr_m_str), key=f"ax{i}_l{idx}_m")
+                        
+                        new_ms = st.number_input("Marker Size", value=float(artist.get_markersize()), min_value=0.0, step=1.0, key=f"ax{i}_l{idx}_ms")
+                        
+                        if new_c != curr_c: artist.set_color(new_c)
+                        if new_lw != curr_lw: artist.set_linewidth(new_lw)
+                        if new_ls != curr_ls: artist.set_linestyle(new_ls)
+                        if new_m != curr_m_str: artist.set_marker(new_m)
+                        if new_ms != artist.get_markersize(): artist.set_markersize(new_ms)
+                        
+                    elif kind == "Collection":
+                        st.markdown("**Collection Settings**")
+                        c_fc, c_ec = st.columns(2)
+                        fc_arr = artist.get_facecolors()
+                        curr_fc = _color_to_hex(fc_arr[0] if len(fc_arr) else "#000000")
+                        new_fc = c_fc.color_picker("Face Color", value=curr_fc, key=f"ax{i}_c{idx}_fc")
+                        
+                        ec_arr = artist.get_edgecolors()
+                        curr_ec = _color_to_hex(ec_arr[0] if len(ec_arr) else "#000000")
+                        new_ec = c_ec.color_picker("Edge Color", value=curr_ec, key=f"ax{i}_c{idx}_ec")
+                        
+                        curr_alpha = artist.get_alpha()
+                        if curr_alpha is None: curr_alpha = 1.0
+                        new_alpha = st.slider("Alpha", 0.0, 1.0, float(curr_alpha), key=f"ax{i}_c{idx}_a")
+                        
+                        if new_fc != curr_fc: artist.set_facecolor(new_fc)
+                        if new_ec != curr_ec: artist.set_edgecolor(new_ec)
+                        if new_alpha != curr_alpha: artist.set_alpha(new_alpha)
+                        
+                    elif kind == "Patch":
+                        st.markdown("**Patch Settings**")
+                        c_fc, c_ec = st.columns(2)
+                        curr_fc = _color_to_hex(artist.get_facecolor())
+                        new_fc = c_fc.color_picker("Face Color", value=curr_fc, key=f"ax{i}_p{idx}_fc")
+                        
+                        curr_ec = _color_to_hex(artist.get_edgecolor())
+                        new_ec = c_ec.color_picker("Edge Color", value=curr_ec, key=f"ax{i}_p{idx}_ec")
+                        
+                        curr_lw = float(artist.get_linewidth())
+                        new_lw = st.number_input("Linewidth", value=curr_lw, min_value=0.0, step=0.5, key=f"ax{i}_p{idx}_lw")
+                        
+                        curr_alpha = artist.get_alpha()
+                        if curr_alpha is None: curr_alpha = 1.0
+                        new_alpha = st.slider("Alpha", 0.0, 1.0, float(curr_alpha), key=f"ax{i}_p{idx}_a")
+                        
+                        if new_fc != curr_fc: artist.set_facecolor(new_fc)
+                        if new_ec != curr_ec: artist.set_edgecolor(new_ec)
+                        if new_lw != curr_lw: artist.set_linewidth(new_lw)
+                        if new_alpha != curr_alpha: artist.set_alpha(new_alpha)
+
+                    elif kind == "Text":
+                        st.markdown("**Text Settings**")
+                        curr_t = artist.get_text()
+                        new_t = st.text_input("Text string", value=curr_t, key=f"ax{i}_t{idx}_t")
+                        
+                        c_c, c_fs = st.columns(2)
+                        curr_c = _color_to_hex(artist.get_color())
+                        new_c = c_c.color_picker("Color", value=curr_c, key=f"ax{i}_t{idx}_c")
+                        
+                        curr_fs = float(artist.get_fontsize())
+                        new_fs = c_fs.number_input("Font Size", value=curr_fs, min_value=1.0, step=1.0, key=f"ax{i}_t{idx}_fs")
+                        
+                        curr_rot = float(artist.get_rotation())
+                        new_rot = st.number_input("Rotation", value=curr_rot, step=15.0, key=f"ax{i}_t{idx}_rot")
+                        
+                        if new_t != curr_t: artist.set_text(new_t)
+                        if new_c != curr_c: artist.set_color(new_c)
+                        if new_fs != curr_fs: artist.set_fontsize(new_fs)
+                        if new_rot != curr_rot: artist.set_rotation(new_rot)
+                else:
+                    st.info("No supported artists found on this axis.")
 
     return fig
 
