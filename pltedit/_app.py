@@ -149,13 +149,13 @@ def _editing_controls(fig: plt.Figure) -> plt.Figure:
             show_leg = c_opts2.checkbox("Legend", value=has_legend, key=f"ax{i}_leg")
             
             locs = ["best", "upper right", "upper left", "lower left", "lower right", "right", "center left", "center right", "lower center", "upper center", "center"]
+            leg_loc = None
             if show_leg:
                 leg_loc_curr = ax.get_legend()._loc if has_legend else 0
                 if isinstance(leg_loc_curr, int):
                     leg_loc_curr = locs[leg_loc_curr] if leg_loc_curr < len(locs) else "best"
                 loc_idx = locs.index(leg_loc_curr) if leg_loc_curr in locs else 0
                 leg_loc = st.selectbox("Legend location", locs, index=loc_idx, key=f"ax{i}_legloc")
-                ax.legend(loc=leg_loc)
             else:
                 leg = ax.get_legend()
                 if leg:
@@ -275,24 +275,76 @@ def _editing_controls(fig: plt.Figure) -> plt.Figure:
                         return lbl
                     
                     artist_names = [get_name(item) for item in data_artists]
+                    if "artist_mods" not in st.session_state:
+                        st.session_state.artist_mods = {}
+                        
                     sel_artist_idx = st.selectbox("Select Artist", range(len(data_artists)), format_func=lambda j: artist_names[j], key=f"ax{i}_sel_artist")
+                    
+                    # 1. Apply ALL saved modifications to ALL artists:
+                    for j, (knd, idx_in_knd, art) in enumerate(data_artists):
+                        k_base_any = f"ax{i}_{knd}{idx_in_knd}"
+                        mods = st.session_state.artist_mods.get(k_base_any, {})
+                        
+                        if "lbl" in mods:
+                            if mods["lbl"].strip() == "": art.set_label("_nolegend_")
+                            else: art.set_label(mods["lbl"])
+                            
+                        if knd == "Line":
+                            if "c" in mods: art.set_color(mods["c"])
+                            if "lw" in mods: art.set_linewidth(mods["lw"])
+                            if "ls" in mods: art.set_linestyle(mods["ls"])
+                            if "m" in mods: art.set_marker(mods["m"])
+                            if "ms" in mods: art.set_markersize(mods["ms"])
+                        elif knd == "Collection":
+                            if "fc" in mods: art.set_facecolor(mods["fc"])
+                            if "ec" in mods: art.set_edgecolor(mods["ec"])
+                            if "a" in mods: art.set_alpha(mods["a"])
+                        elif knd == "Patch":
+                            if "fc" in mods: art.set_facecolor(mods["fc"])
+                            if "ec" in mods: art.set_edgecolor(mods["ec"])
+                            if "lw" in mods: art.set_linewidth(mods["lw"])
+                            if "a" in mods: art.set_alpha(mods["a"])
+                        elif knd == "Text":
+                            if "t" in mods: art.set_text(mods["t"])
+                            if "c" in mods: art.set_color(mods["c"])
+                            if "fs" in mods: art.set_fontsize(mods["fs"])
+                            if "rot" in mods: art.set_rotation(mods["rot"])
+
+                    # 2. Render UI for the currently selected artist
                     kind, idx, artist = data_artists[sel_artist_idx]
+                    k_base = f"ax{i}_{kind}{idx}"
+                    if k_base not in st.session_state.artist_mods:
+                        st.session_state.artist_mods[k_base] = {}
+                    
+                    st.markdown("**General Settings**")
+                    curr_lbl = artist.get_label()
+                    display_lbl = "" if (not curr_lbl or str(curr_lbl).startswith('_')) else str(curr_lbl)
+                    new_lbl = st.text_input("Legend Label", value=display_lbl, key=f"{k_base}_lbl")
+                    st.session_state.artist_mods[k_base]["lbl"] = new_lbl
+                    if new_lbl.strip() == "": artist.set_label("_nolegend_")
+                    else: artist.set_label(new_lbl)
                     
                     if kind == "Line":
                         st.markdown("**Line Settings**")
                         c_l, c_w = st.columns(2)
                         
                         curr_c = _color_to_hex(artist.get_color())
-                        new_c = c_l.color_picker("Color", value=curr_c, key=f"ax{i}_l{idx}_c")
+                        new_c = c_l.color_picker("Color", value=curr_c, key=f"{k_base}_c")
+                        st.session_state.artist_mods[k_base]["c"] = new_c
+                        artist.set_color(new_c)
                         
                         curr_lw = float(artist.get_linewidth())
-                        new_lw = c_w.number_input("Linewidth", value=curr_lw, min_value=0.0, step=0.5, key=f"ax{i}_l{idx}_lw")
+                        new_lw = c_w.number_input("Linewidth", value=curr_lw, min_value=0.0, step=0.5, key=f"{k_base}_lw")
+                        st.session_state.artist_mods[k_base]["lw"] = new_lw
+                        artist.set_linewidth(new_lw)
                         
                         c_ls, c_m = st.columns(2)
                         ls_opts = ["-", "--", "-.", ":", "None"]
                         curr_ls = artist.get_linestyle()
                         if curr_ls not in ls_opts: ls_opts = [curr_ls] + [x for x in ls_opts if x != curr_ls]
-                        new_ls = c_ls.selectbox("Linestyle", ls_opts, index=0 if curr_ls not in ls_opts else ls_opts.index(curr_ls), key=f"ax{i}_l{idx}_ls")
+                        new_ls = c_ls.selectbox("Linestyle", ls_opts, index=0 if curr_ls not in ls_opts else ls_opts.index(curr_ls), key=f"{k_base}_ls")
+                        st.session_state.artist_mods[k_base]["ls"] = new_ls
+                        artist.set_linestyle(new_ls)
                         
                         m_opts = ["None", ".", ",", "o", "v", "^", "<", ">", "1", "2", "3", "4", "s", "p", "*", "h", "H", "+", "x", "D", "d", "|", "_"]
                         curr_m = artist.get_marker()
@@ -301,77 +353,86 @@ def _editing_controls(fig: plt.Figure) -> plt.Figure:
                             if curr_m_str not in m_opts: m_opts = [curr_m_str] + [x for x in m_opts if x != curr_m_str]
                         except Exception:
                             curr_m_str = "None"
-                        new_m = c_m.selectbox("Marker", m_opts, index=0 if curr_m_str not in m_opts else m_opts.index(curr_m_str), key=f"ax{i}_l{idx}_m")
+                        new_m = c_m.selectbox("Marker", m_opts, index=0 if curr_m_str not in m_opts else m_opts.index(curr_m_str), key=f"{k_base}_m")
+                        st.session_state.artist_mods[k_base]["m"] = new_m
+                        artist.set_marker(new_m)
                         
-                        new_ms = st.number_input("Marker Size", value=float(artist.get_markersize()), min_value=0.0, step=1.0, key=f"ax{i}_l{idx}_ms")
-                        
-                        if new_c != curr_c: artist.set_color(new_c)
-                        if new_lw != curr_lw: artist.set_linewidth(new_lw)
-                        if new_ls != curr_ls: artist.set_linestyle(new_ls)
-                        if new_m != curr_m_str: artist.set_marker(new_m)
-                        if new_ms != artist.get_markersize(): artist.set_markersize(new_ms)
+                        new_ms = st.number_input("Marker Size", value=float(artist.get_markersize()), min_value=0.0, step=1.0, key=f"{k_base}_ms")
+                        st.session_state.artist_mods[k_base]["ms"] = new_ms
+                        artist.set_markersize(new_ms)
                         
                     elif kind == "Collection":
                         st.markdown("**Collection Settings**")
                         c_fc, c_ec = st.columns(2)
                         fc_arr = artist.get_facecolors()
                         curr_fc = _color_to_hex(fc_arr[0] if len(fc_arr) else "#000000")
-                        new_fc = c_fc.color_picker("Face Color", value=curr_fc, key=f"ax{i}_c{idx}_fc")
+                        new_fc = c_fc.color_picker("Face Color", value=curr_fc, key=f"{k_base}_fc")
+                        st.session_state.artist_mods[k_base]["fc"] = new_fc
+                        artist.set_facecolor(new_fc)
                         
                         ec_arr = artist.get_edgecolors()
                         curr_ec = _color_to_hex(ec_arr[0] if len(ec_arr) else "#000000")
-                        new_ec = c_ec.color_picker("Edge Color", value=curr_ec, key=f"ax{i}_c{idx}_ec")
+                        new_ec = c_ec.color_picker("Edge Color", value=curr_ec, key=f"{k_base}_ec")
+                        st.session_state.artist_mods[k_base]["ec"] = new_ec
+                        artist.set_edgecolor(new_ec)
                         
                         curr_alpha = artist.get_alpha()
                         if curr_alpha is None: curr_alpha = 1.0
-                        new_alpha = st.slider("Alpha", 0.0, 1.0, float(curr_alpha), key=f"ax{i}_c{idx}_a")
-                        
-                        if new_fc != curr_fc: artist.set_facecolor(new_fc)
-                        if new_ec != curr_ec: artist.set_edgecolor(new_ec)
-                        if new_alpha != curr_alpha: artist.set_alpha(new_alpha)
+                        new_alpha = st.slider("Alpha", 0.0, 1.0, float(curr_alpha), key=f"{k_base}_a")
+                        st.session_state.artist_mods[k_base]["a"] = new_alpha
+                        artist.set_alpha(new_alpha)
                         
                     elif kind == "Patch":
                         st.markdown("**Patch Settings**")
                         c_fc, c_ec = st.columns(2)
                         curr_fc = _color_to_hex(artist.get_facecolor())
-                        new_fc = c_fc.color_picker("Face Color", value=curr_fc, key=f"ax{i}_p{idx}_fc")
+                        new_fc = c_fc.color_picker("Face Color", value=curr_fc, key=f"{k_base}_fc")
+                        st.session_state.artist_mods[k_base]["fc"] = new_fc
+                        artist.set_facecolor(new_fc)
                         
                         curr_ec = _color_to_hex(artist.get_edgecolor())
-                        new_ec = c_ec.color_picker("Edge Color", value=curr_ec, key=f"ax{i}_p{idx}_ec")
+                        new_ec = c_ec.color_picker("Edge Color", value=curr_ec, key=f"{k_base}_ec")
+                        st.session_state.artist_mods[k_base]["ec"] = new_ec
+                        artist.set_edgecolor(new_ec)
                         
                         curr_lw = float(artist.get_linewidth())
-                        new_lw = st.number_input("Linewidth", value=curr_lw, min_value=0.0, step=0.5, key=f"ax{i}_p{idx}_lw")
+                        new_lw = st.number_input("Linewidth", value=curr_lw, min_value=0.0, step=0.5, key=f"{k_base}_lw")
+                        st.session_state.artist_mods[k_base]["lw"] = new_lw
+                        artist.set_linewidth(new_lw)
                         
                         curr_alpha = artist.get_alpha()
                         if curr_alpha is None: curr_alpha = 1.0
-                        new_alpha = st.slider("Alpha", 0.0, 1.0, float(curr_alpha), key=f"ax{i}_p{idx}_a")
-                        
-                        if new_fc != curr_fc: artist.set_facecolor(new_fc)
-                        if new_ec != curr_ec: artist.set_edgecolor(new_ec)
-                        if new_lw != curr_lw: artist.set_linewidth(new_lw)
-                        if new_alpha != curr_alpha: artist.set_alpha(new_alpha)
+                        new_alpha = st.slider("Alpha", 0.0, 1.0, float(curr_alpha), key=f"{k_base}_a")
+                        st.session_state.artist_mods[k_base]["a"] = new_alpha
+                        artist.set_alpha(new_alpha)
 
                     elif kind == "Text":
                         st.markdown("**Text Settings**")
                         curr_t = artist.get_text()
-                        new_t = st.text_input("Text string", value=curr_t, key=f"ax{i}_t{idx}_t")
+                        new_t = st.text_input("Text string", value=curr_t, key=f"{k_base}_t")
+                        st.session_state.artist_mods[k_base]["t"] = new_t
+                        artist.set_text(new_t)
                         
                         c_c, c_fs = st.columns(2)
                         curr_c = _color_to_hex(artist.get_color())
-                        new_c = c_c.color_picker("Color", value=curr_c, key=f"ax{i}_t{idx}_c")
+                        new_c = c_c.color_picker("Color", value=curr_c, key=f"{k_base}_c")
+                        st.session_state.artist_mods[k_base]["c"] = new_c
+                        artist.set_color(new_c)
                         
                         curr_fs = float(artist.get_fontsize())
-                        new_fs = c_fs.number_input("Font Size", value=curr_fs, min_value=1.0, step=1.0, key=f"ax{i}_t{idx}_fs")
+                        new_fs = c_fs.number_input("Font Size", value=curr_fs, min_value=1.0, step=1.0, key=f"{k_base}_fs")
+                        st.session_state.artist_mods[k_base]["fs"] = new_fs
+                        artist.set_fontsize(new_fs)
                         
                         curr_rot = float(artist.get_rotation())
-                        new_rot = st.number_input("Rotation", value=curr_rot, step=15.0, key=f"ax{i}_t{idx}_rot")
-                        
-                        if new_t != curr_t: artist.set_text(new_t)
-                        if new_c != curr_c: artist.set_color(new_c)
-                        if new_fs != curr_fs: artist.set_fontsize(new_fs)
-                        if new_rot != curr_rot: artist.set_rotation(new_rot)
+                        new_rot = st.number_input("Rotation", value=curr_rot, step=15.0, key=f"{k_base}_rot")
+                        st.session_state.artist_mods[k_base]["rot"] = new_rot
+                        artist.set_rotation(new_rot)
                 else:
                     st.info("No supported artists found on this axis.")
+
+            if show_leg and leg_loc is not None:
+                ax.legend(loc=leg_loc)
 
     return fig
 
