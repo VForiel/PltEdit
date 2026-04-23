@@ -150,12 +150,25 @@ def _editing_controls(fig: plt.Figure) -> plt.Figure:
             
             locs = ["best", "upper right", "upper left", "lower left", "lower right", "right", "center left", "center right", "lower center", "upper center", "center"]
             leg_loc = None
+            leg_size = None
             if show_leg:
                 leg_loc_curr = ax.get_legend()._loc if has_legend else 0
                 if isinstance(leg_loc_curr, int):
                     leg_loc_curr = locs[leg_loc_curr] if leg_loc_curr < len(locs) else "best"
                 loc_idx = locs.index(leg_loc_curr) if leg_loc_curr in locs else 0
-                leg_loc = st.selectbox("Legend location", locs, index=loc_idx, key=f"ax{i}_legloc")
+                
+                c_leg1, c_leg2 = st.columns([2, 1])
+                leg_loc = c_leg1.selectbox("Legend location", locs, index=loc_idx, key=f"ax{i}_legloc")
+                
+                curr_fontsize = 10
+                if has_legend:
+                    try:
+                        texts = ax.get_legend().get_texts()
+                        if texts:
+                            curr_fontsize = int(texts[0].get_fontsize())
+                    except Exception:
+                        pass
+                leg_size = c_leg2.number_input("Legend size", value=curr_fontsize, key=f"ax{i}_legsize", step=1)
             else:
                 leg = ax.get_legend()
                 if leg:
@@ -432,7 +445,7 @@ def _editing_controls(fig: plt.Figure) -> plt.Figure:
                     st.info("No supported artists found on this axis.")
 
             if show_leg and leg_loc is not None:
-                ax.legend(loc=leg_loc)
+                ax.legend(loc=leg_loc, fontsize=leg_size)
 
     return fig
 
