@@ -32,8 +32,15 @@ def set_style(obj, style: str) -> Figure:
         
         for ax in fig.axes:
             # Ensure compatible geometry
-            geometry = ax.get_geometry() if hasattr(ax, 'get_geometry') else (1, 1, 1)
-            new_ax = new_fig.add_subplot(*geometry)
+            if hasattr(ax, 'get_subplotspec'):
+                ss = ax.get_subplotspec()
+                rows, cols, start, stop = ss.get_geometry()
+                new_ax = new_fig.add_subplot(rows, cols, (start + 1, stop + 1))
+            elif hasattr(ax, 'get_geometry'):
+                geometry = ax.get_geometry()
+                new_ax = new_fig.add_subplot(*geometry)
+            else:
+                new_ax = new_fig.add_axes(ax.get_position())
             
             # Copy titles and labels
             new_ax.set_title(ax.get_title())

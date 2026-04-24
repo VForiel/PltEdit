@@ -48,13 +48,28 @@ def _display_metadata(meta: dict) -> None:
         st.text(f"PltEdit:    {meta.get('plt_edit_version', 'N/A')}")
 
 
-def _editing_controls(fig: plt.Figure) -> plt.Figure:
+def _editing_controls(fig: plt.Figure, file_path: str | None = None) -> plt.Figure:
     """Render editing controls in the sidebar and return the (modified) figure."""
     axes = fig.get_axes()
     if not axes:
         return fig
 
     st.sidebar.subheader("Edit figure")
+    if file_path and Path(file_path).name == "demo.plt":
+        if st.sidebar.button("🔄 Reset Demo", use_container_width=True):
+            try:
+                import sys
+                repo_root = Path(__file__).parent.parent
+                if str(repo_root) not in sys.path:
+                    sys.path.insert(0, str(repo_root))
+                from generate_demo import generate_demo_figure
+                generate_demo_figure()
+                for key in list(st.session_state.keys()):
+                    if key.startswith("ax") or "artist_mods" in key or "fig_" in key:
+                        del st.session_state[key]
+                st.rerun()
+            except Exception as e:
+                st.sidebar.error(f"Failed to reset demo: {e}")
 
     # -- Global Style -------------------------------------------------------
     current_style = "default"
@@ -606,15 +621,6 @@ def main() -> None:
 
         # ---- Display & edit ---------------------------------------------------
         if fig is not None:
-            fig = _editing_controls(fig)
-            st.pyplot(fig)
-            
-            if meta:
-                _display_metadata(meta)
-                
-            st.divider()
-            col1, col2, col3 = st.columns([1, 1, 1])
-            
             # Identify the target filename
             save_target = "figure.plt"
             if "active_file" in st.session_state and st.session_state.active_file:
@@ -623,6 +629,15 @@ def main() -> None:
                 save_target = uploaded_file.name
             elif preload_path:
                 save_target = str(preload_path)
+
+            fig = _editing_controls(fig, save_target)
+            st.pyplot(fig)
+            
+            if meta:
+                _display_metadata(meta)
+                
+            st.divider()
+            col1, col2, col3 = st.columns([1, 1, 1])
 
             with col1:
                 # Save overwrites exactly where it was
